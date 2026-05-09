@@ -1,51 +1,51 @@
 # Container Security System for MTS
 
-> Migrated from locked repository.
+> Migrated from a locked repository.
 
-## 📋 Описание задачи
+## 📋 Problem Description
 
-Подробное описание проблемы, которую решает проект:
-- В телеком-инфраструктуре МТС критически важно обеспечивать безопасность контейнеризированных приложений, обслуживающих миллионы абонентов
-- Система предотвращает уязвимости в сетевых сервисах, атаки на цепочку поставок и нарушения compliance
-- Требования включают автоматическую блокировку образов с критическими CVE, проверку цифровых подписей и применение политик безопасности
+This project addresses a critical need in MTS telecom infrastructure: securing containerized applications that serve millions of subscribers.
 
-### Ключевые возможности
-- **Сканирование уязвимостей** (Trivy): Детекция CVEs, конфигурационных проблем
-- **Цифровые подписи** (Cosign): Keyless и традиционные методы подписывания
-- **Политики безопасности** (OPA): Гибкие правила на языке Rego
-- **Автоматическая блокировка**: Kubernetes Admission Webhook
-- **Мониторинг и уведомления**: Prometheus + Telegram/Slack интеграция
-- **CI/CD интеграция**: Полная автоматизация в GitLab CI
+The system helps prevent vulnerabilities in network services, supply-chain attacks, and compliance violations. Key requirements include automatic blocking of images with critical CVEs, digital signature verification, and policy-based security controls.
 
-## 🏗️ Архитектура решения
+### Key Capabilities
 
-### Схема архитектуры
+- **Vulnerability scanning** (Trivy): Detects CVEs and configuration issues
+- **Digital signatures** (Cosign): Supports keyless and traditional signing methods
+- **Security policies** (OPA): Flexible rules written in Rego
+- **Automatic blocking**: Kubernetes Admission Webhook enforcement
+- **Monitoring and alerts**: Prometheus + Telegram/Slack integrations
+- **CI/CD integration**: End-to-end pipeline automation
+
+## 🏗️ Solution Architecture
+
+### Architecture Diagram
 
 ```mermaid
 graph TB
-    subgraph "Входные данные"
-        A[Docker Registry<br/>Образы для развертывания]
+    subgraph "Input"
+        A[Docker Registry<br/>Deployment images]
         B[CI/CD Pipeline<br/>GitLab CI]
     end
 
-    subgraph "Компоненты сканирования"
-        C[Trivy Scanner<br/>Сканирование уязвимостей<br/>CVEs, конфигурации]
-        D[Cosign Signer<br/>Подписи образов<br/>Keyless/OIDC]
+    subgraph "Scanning Components"
+        C[Trivy Scanner<br/>Vulnerability scanning<br/>CVEs, config]
+        D[Cosign Signer<br/>Image signatures<br/>Keyless/OIDC]
     end
 
-    subgraph "Политики и решения"
-        E[OPA Policy Engine<br/>Оценка политик<br/>Rego язык]
+    subgraph "Policy and Decision Layer"
+        E[OPA Policy Engine<br/>Policy evaluation<br/>Rego]
         F[Kubernetes<br/>Admission Webhook<br/>ValidatingAdmissionWebhook]
     end
 
-    subgraph "Мониторинг и уведомления"
-        G[Prometheus<br/>Метрики системы]
-        H[Telegram/Slack<br/>Уведомления о блокировках]
+    subgraph "Monitoring and Notifications"
+        G[Prometheus<br/>System metrics]
+        H[Telegram/Slack<br/>Block notifications]
     end
 
-    subgraph "Выход"
-        I[Kubernetes API Server<br/>Разрешение/Блокировка<br/>деплоймента]
-        J[Отчеты Compliance<br/>Автоматизированные<br/>отчеты]
+    subgraph "Output"
+        I[Kubernetes API Server<br/>Allow/Block<br/>deployment]
+        J[Compliance Reports<br/>Automated<br/>reporting]
     end
 
     A --> B
@@ -72,24 +72,24 @@ graph TB
     linkStyle 7 stroke:#4ecdc4,stroke-width:3px
 ```
 
-### Компоненты системы
+### System Components
 
-- **Trivy Scanner**: Сканирование Docker образов на наличие уязвимостей (CVEs, конфигурации, секреты)
-- **Cosign Verifier**: Проверка цифровых подписей образов (keyless или с использованием ключей)
-- **OPA Policy Engine**: Оценка политик безопасности на языке Rego для принятия решений allow/deny
-- **Kubernetes Admission Webhook**: Автоматическая блокировка развертывания уязвимых образов
-- **Prometheus Monitoring**: Сбор метрик о сканированиях, блокировках и производительности
-- **Notifications**: Уведомления в Telegram/Slack о событиях безопасности
+- **Trivy Scanner**: Scans Docker images for vulnerabilities (CVEs, misconfigurations, secrets)
+- **Cosign Verifier**: Verifies image signatures (keyless or key-based)
+- **OPA Policy Engine**: Evaluates Rego policies to make allow/deny decisions
+- **Kubernetes Admission Webhook**: Automatically blocks deployment of risky images
+- **Prometheus Monitoring**: Collects scan, block, and performance metrics
+- **Notifications**: Sends security alerts to Telegram/Slack
 
-### Детальная диаграмма компонентов
+### Component Flow Diagram
 
 ```mermaid
 graph LR
     subgraph "Admission Webhook Flow"
-        K[AdmissionRequest<br/>от K8s API]
-        L{Trivy Scan<br/>Образ на уязвимости}
-        M{Cosign Verify<br/>Проверка подписи}
-        N{OPA Evaluate<br/>Применение политик}
+        K[AdmissionRequest<br/>from K8s API]
+        L{Trivy Scan<br/>Image vulnerabilities}
+        M{Cosign Verify<br/>Signature check}
+        N{OPA Evaluate<br/>Apply policies}
         O[AdmissionResponse<br/>Allow/Deny]
     end
 
@@ -101,117 +101,119 @@ graph LR
     style O fill:#c8e6c9
 ```
 
-## 🛠️ Используемые технологии
+## 🛠️ Technology Stack
 
-### Инфраструктура
-- **Kubernetes**: v1.28+ (k3s/minikube для локального тестирования)
-- **Docker**: v20.10+ (контейнеризация всех компонентов)
-- **Helm**: v3.12+ (управление релизами)
+### Infrastructure
+
+- **Kubernetes**: v1.28+ (k3s/minikube for local testing)
+- **Docker**: v20.10+ (containerization of all components)
+- **Helm**: v3.12+ (release management)
 
 ### CI/CD
-- **GitLab CI**: Полная автоматизация пайплайна
-- **kubectl**: v1.28+ (управление Kubernetes)
-- **cert-manager**: v1.12+ (TLS сертификаты для webhook)
 
-### Мониторинг и наблюдаемость
-- **Prometheus**: v2.45+ (сбор метрик)
-- **Grafana**: v10.0+ (визуализация дашбордов)
-- **Loki**: v2.8+ (агрегация логов)
+- **GitLab CI**: Full pipeline automation
+- **kubectl**: v1.28+ (Kubernetes management)
+- **cert-manager**: v1.12+ (TLS certificates for webhook)
 
-### Безопасность
-- **Trivy**: v0.45+ (сканирование уязвимостей и конфигураций)
-- **Cosign**: v2.0+ (подписи образов, keyless signing)
-- **OPA**: v0.55+ (политики безопасности на Rego)
+### Monitoring and Observability
 
-## 🚀 Быстрый старт
+- **Prometheus**: v2.45+ (metrics collection)
+- **Grafana**: v10.0+ (dashboard visualization)
+- **Loki**: v2.8+ (log aggregation)
 
->  Начни с **[Руководства для Начинающих](BEGINNER_GUIDE.md)** - пошаговое руководство для быстрого запуска и тестирования всех функций
+### Security
 
-### Требования
+- **Trivy**: v0.45+ (vulnerability and configuration scanning)
+- **Cosign**: v2.0+ (image signing, keyless signing)
+- **OPA**: v0.55+ (Rego policy engine)
+
+## 🚀 Quick Start
+
+### Requirements
 
 - Docker 20.10+
 - kubectl 1.28+
-- Minikube или Kind 0.18+
-- Go 1.21+ (для локальной разработки)
-- 4GB RAM, 2 CPU минимум
+- Minikube or Kind 0.18+
+- Go 1.21+ (for local development)
+- Minimum 4GB RAM, 2 CPU
 
-### Установка и запуск
+### Install and Run
 
-#### Вариант 1: Docker Compose (рекомендуется для тестирования)
+#### Option 1: Docker Compose (recommended for testing)
 
 ```bash
-# Клонирование репозитория
+# Clone repository
 git clone https://github.com/mts/container-security-system.git
 cd container-security-system
 
-# Запуск всех компонентов
+# Start all components
 docker-compose up -d
 
-# Проверка статуса
+# Check status
 docker-compose ps
 ```
 
-#### Вариант 2: Kubernetes (production-ready)
+#### Option 2: Kubernetes (production-ready)
 
 ```bash
-# Установка в Kubernetes кластер
+# Install to Kubernetes cluster
 kubectl apply -f deploy/k8s/
 
-# Проверка развертывания
+# Check deployment
 kubectl get pods -n container-security
 kubectl get validatingwebhookconfigurations
 ```
 
-#### Вариант 3: Локальная разработка
+#### Option 3: Local development
 
 ```bash
-# Сборка компонентов
+# Build components
 make build
 
-# Запуск в minikube
+# Start in minikube
 minikube start
 make deploy-local
 
-# Проверка работоспособности
+# Verify health
 kubectl get pods
 ```
 
-### Проверка работоспособности
+### Health Checks
 
 ```bash
-# Проверка webhook сервиса
+# Check webhook service
 kubectl get validatingwebhookconfigurations container-security-webhook
 
-# Проверка метрик
+# Check metrics
 curl http://localhost:8080/metrics
 
-# Тест сканирования образа
+# Test image scan
 docker run --rm container-security/trivy-scanner:latest image scan nginx:latest --format json
 
-# Тест webhook (пример блокировки)
+# Test webhook blocking example
 kubectl run test-pod --image=nginx:1.21 --restart=Never
 kubectl get events --sort-by=.metadata.creationTimestamp
 ```
 
-## 📊 Мониторинг и наблюдаемость
+## 📊 Monitoring and Observability
 
-### Доступ к дашбордам
+### Dashboard Access
 
 - **Grafana**: http://localhost:3000 (admin/admin)
 - **Prometheus**: http://localhost:9090
-- **Webhook метрики**: http://localhost:8080/metrics
+- **Webhook metrics**: http://localhost:8080/metrics
 
-### Ключевые метрики
+### Key Metrics
 
-- `container_security_scans_total`: Общее количество сканирований
-- `container_security_blocks_total`: Количество заблокированных развертываний
-- `container_security_signatures_verified_total`: Проверенные подписи
-- `container_security_policy_evaluations_total`: Оценки политик OPA
+- `container_security_scans_total`: Total number of scans
+- `container_security_blocks_total`: Number of blocked deployments
+- `container_security_signatures_verified_total`: Verified signatures
+- `container_security_policy_evaluations_total`: OPA policy evaluations
 
-### Настройка алертов
+### Alerting Example
 
 ```yaml
-# Пример правила алерта в Prometheus
+# Prometheus alert rule example
 groups:
 - name: container-security
   rules:
@@ -221,24 +223,24 @@ groups:
     labels:
       severity: warning
     annotations:
-      summary: "Высокий уровень блокировок уязвимых образов"
+      summary: "High block rate for vulnerable images"
 ```
 
-## 🔒 Безопасность
+## 🔒 Security
 
-### Реализованные меры
+### Implemented Controls
 
-- ✅ **Сканирование образов**: Автоматическая проверка на уязвимости перед развертыванием
-- ✅ **Цифровые подписи**: Обязательная верификация подписей для всех образов
-- ✅ **Политики безопасности**: Гибкие правила блокировки по severity и типу уязвимостей
-- ✅ **TLS шифрование**: Защищенная коммуникация webhook с Kubernetes API
-- ✅ **RBAC**: Минимальные привилегии для всех компонентов
-- ✅ **Network Policies**: Сегментация сети между компонентами
+- ✅ **Image scanning**: Automatic vulnerability checks before deployment
+- ✅ **Digital signatures**: Mandatory verification for all images
+- ✅ **Security policies**: Flexible blocking rules by severity and vulnerability type
+- ✅ **TLS encryption**: Secured webhook communication with Kubernetes API
+- ✅ **RBAC**: Least-privilege access controls for all components
+- ✅ **Network Policies**: Network segmentation between components
 
-### Политики безопасности
+### Security Policy Example
 
 ```rego
-# Пример политики блокировки критических уязвимостей
+# Example policy: block critical vulnerabilities
 package policies.vulnerability_policy
 
 deny if {
@@ -251,112 +253,111 @@ deny if {
 }
 ```
 
-### Проверка безопасности
+### Security Validation
 
 ```bash
-# Сканирование образа
+# Scan image
 docker run container-security/trivy-scanner scan nginx:latest
 
-# Проверка подписей
+# Verify signatures
 docker run container-security/cosign verify nginx:latest
 
-# Тестирование политик
-kubectl apply -f test-vulnerable-deployment.yaml  # Должен быть заблокирован
+# Test policy enforcement
+kubectl apply -f test-vulnerable-deployment.yaml  # should be blocked
 ```
 
-## 🧪 Тестирование
+## 🧪 Testing
 
-### Запуск тестов
+### Run Tests
 
 ```bash
-# Unit тесты
+# Unit tests
 make test-unit
 
-# Integration тесты
+# Integration tests
 make test-integration
 
-# E2E тесты
+# E2E tests
 make test-e2e
 
-# Все тесты
+# All tests
 make test
 ```
 
-### Тестовые сценарии
+### Test Scenarios
 
 ```bash
-# Тест блокировки уязвимого образа
+# Vulnerable image blocking test
 kubectl apply -f test/cases/vulnerable-image-test.yaml
 
-# Тест неподписанного образа
+# Unsigned image test
 kubectl apply -f test/cases/unsigned-image-test.yaml
 
-# Тест валидного образа
+# Valid image test
 kubectl apply -f test/cases/valid-image-test.yaml
 ```
 
-### Производительность
+### Performance
 
-- **Время сканирования**: < 30 сек для типичного образа
-- **Пропускная способность**: 100+ образов в минуту
+- **Scan time**: < 30s for a typical image
+- **Throughput**: 100+ images per minute
 - **False positive rate**: < 1%
 
 ## 🔧 Troubleshooting
 
-### Частые проблемы
+### Common Issues
 
-**Проблема**: Webhook блокирует все развертывания
+**Issue**: Webhook blocks all deployments
 ```bash
-# Решение: Проверить конфигурацию политик
+# Solution: check policy configuration
 kubectl get validatingwebhookconfigurations
 kubectl describe validatingwebhookconfigurations container-security-webhook
 
-# Проверить логи
+# Check logs
 kubectl logs -n container-security deployment/webhook-server
 ```
 
-**Проблема**: Ошибка TLS сертификата
+**Issue**: TLS certificate error
 ```bash
-# Решение: Перегенерировать сертификаты
+# Solution: regenerate certificates
 make generate-certs
 kubectl apply -f deploy/k8s/webhook/cert-manager-issuer.yaml
 ```
 
-**Проблема**: Trivy не может просканировать образ
+**Issue**: Trivy cannot scan image
 ```bash
-# Решение: Проверить доступ к registry
+# Solution: verify registry access
 kubectl get secrets -n container-security
 docker login registry.mts.ru
 
-# Проверить конфигурацию Trivy
+# Check Trivy configuration
 kubectl exec -n container-security deployment/trivy-scanner -- trivy --version
 ```
 
-## 📈 Применимость в МТС
+## 📈 MTS Applicability
 
-Данное решение уже применяется в МТС для:
+This solution is already applicable in MTS scenarios such as:
 
-- **5G Core Network**: Безопасность контейнеризированных сетевых функций (CUPS, UPF)
-- **BSS/OSS системы**: Защита биллинговых и операционных систем
-- **Мобильные приложения**: CI/CD безопасность мобильных сервисов
-- **IoT платформа**: Безопасность edge-вычислений
-- **Дата-центры**: Автоматизированное управление инфраструктурой
+- **5G Core Network**: Security of containerized network functions (CUPS, UPF)
+- **BSS/OSS systems**: Protection of billing and operational systems
+- **Mobile apps**: CI/CD security for mobile services
+- **IoT platform**: Edge computing security
+- **Data centers**: Automated infrastructure security management
 
-### ROI и преимущества
+### ROI and Benefits
 
-- ⚡ **Ускорение деплоя**: Автоматизация проверки безопасности
-- 🛡️ **Снижение инцидентов**: 95% блокировка уязвимых образов
-- 📊 **Полная наблюдаемость**: Метрики и логи всех операций
-- 💰 **Экономия затрат**: Предотвращение простоев и инцидентов
-- 🔍 **Compliance**: Полная traceability и аудит
+- ⚡ **Faster deployments**: Automated security verification
+- 🛡️ **Fewer incidents**: Up to 95% blocking of vulnerable images
+- 📊 **Full observability**: Metrics and logs for all operations
+- 💰 **Cost savings**: Prevents downtime and security incidents
+- 🔍 **Compliance**: End-to-end traceability and auditability
 
-## 📝 Лицензия
+## 📝 License
 
 MIT License
 
-## 👤 Автор
+## 👤 Author
 
-**Кирилл Ефимович**
+**Kirill Efimovich**
 - GitHub: [@lanebo1](https://github.com/lanebo1)
 - Email: kirillefimovic141@gmail.com
-
