@@ -1,0 +1,173 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: container-security-opa-policies
+  namespace: container-security
+  labels:
+    app: container-security-webhook
+    component: opa-policies
+data:
+  base_image_policy.rego: |
+    package container_security.base_image
+
+    import data.container_security.data
+
+    default allow = false
+
+    allow {
+        input.image == data.allowed_base_images[_]
+    }
+
+    allow {
+        startswith(input.image, "registry.mts.ru/")
+    }
+
+    violation[{"msg": msg}] {
+        not allow
+        msg := sprintf("Base image %s is not in the allowed list", [input.image])
+    }
+  compliance_policy.rego: |
+    package container_security.compliance
+
+    import data.container_security.data
+
+    default allow = true
+
+    # PCI DSS compliance checks
+    violation[{"msg": msg}] {
+        data.container_security.compliance.pci_dss.enabled
+        input.deployment_context.environment == "production"
+        not input.security_context.runAsNonRoot
+        msg := "PCI DSS requires containers to run as non-root user"
+    }
+
+    violation[{"msg": msg}] {
+        data.container_security.compliance.pci_dss.enabled
+        input.deployment_context.environment == "production"
+        not input.security_context.readOnlyRootFilesystem
+        msg := "PCI DSS requires read-only root filesystem for production containers"
+    }
+
+    # GDPR compliance checks
+    violation[{"msg": msg}] {
+        data.container_security.compliance.gdpr.enabled
+        input.deployment_context.environment == "production"
+        not input.metadata.annotations["data-classification"]
+        msg := "GDPR requires data classification annotation for production workloads"
+    }
+  container_security.rego: |
+    package container_security
+
+    import data.container_security.vulnerability_policy
+    import data.container_security.signature_policy
+    import data.container_security.compliance_policy
+    import data.container_security.base_image_policy
+
+    default allow = false
+
+    allow {
+        vulnerability_policy.allow
+        signature_policy.allow
+        compliance_policy.allow
+        base_image_policy.allow
+    }
+
+    reason := "Container security policy violation"
+  signature_policy.rego: |
+    package container_security.signature
+
+    import data.container_security.data
+
+    default allow = false
+
+    allow {
+        input.signature_verified == true
+    }
+
+    allow {
+        data.container_security.signature.allow_unsigned_in_dev
+        input.deployment_context.environment != "production"
+    }
+
+    violation[{"msg": msg}] {
+        not allow
+        msg := sprintf("Image signature verification failed for %s", [input.image])
+    }
+  vulnerability_policy.rego: |
+    package container_security.vulnerability
+
+    import data.container_security.data
+
+    default allow = true
+
+    allow {
+        count(deny) == 0
+    }
+
+    deny[{"msg": msg, "severity": severity}] {
+        count(critical_vulns) > data.container_security.vulnerability.critical_threshold
+        severity := "CRITICAL"
+        msg := sprintf("Found %d critical vulnerabilities (max allowed: %d)", [count(critical_vulns), data.container_security.vulnerability.critical_threshold])
+    }
+
+    deny[{"msg": msg, "severity": severity}] {
+        count(high_vulns) > data.container_security.vulnerability.high_threshold
+        severity := "HIGH"
+        msg := sprintf("Found %d high-severity vulnerabilities (max allowed: %d)", [count(high_vulns), data.container_security.vulnerability.high_threshold])
+    }
+
+    deny[{"msg": msg, "severity": severity}] {
+        cvss_score > data.container_security.vulnerability.cvss_threshold
+        severity := "HIGH"
+        msg := sprintf("Found vulnerability with CVSS score %.1f (max allowed: %.1f)", [cvss_score, data.container_security.vulnerability.cvss_threshold])
+    }
+
+    # Count vulnerabilities by severity
+    critical_vulns[vuln] {
+        vuln := input.scan_results.vulnerabilities[_]
+        vuln.severity == "CRITICAL"
+    }
+
+    high_vulns[vuln] {
+        vuln := input.scan_results.vulnerabilities[_]
+        vuln.severity == "HIGH"
+    }
+
+    cvss_score = max([vuln.cvss_score | vuln := input.scan_results.vulnerabilities[_]; vuln.cvss_score > 0])
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: container-security-opa-data
+  namespace: container-security
+  labels:
+    app: container-security-webhook
+    component: opa-data
+data:
+  data.json: |
+    {
+      "allowed_base_images": [
+        "nginx:1.24-alpine",
+        "alpine:latest",
+        "registry.mts.ru/backend/secure-app:v1.2.3"
+      ],
+      "container_security": {
+        "vulnerability": {
+          "critical_threshold": 0,
+          "high_threshold": 5,
+          "cvss_threshold": 7.0
+        },
+        "signature": {
+          "allow_unsigned_in_dev": false
+        },
+        "compliance": {
+          "pci_dss": {
+            "enabled": true
+          },
+          "gdpr": {
+            "enabled": true
+          }
+        }
+      }
+    }
+

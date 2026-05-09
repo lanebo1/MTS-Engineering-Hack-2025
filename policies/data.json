@@ -1,0 +1,42 @@
+{
+  "config": {
+    "default_decision": "container_security/allow",
+    "policies_path": "/opt/opa/policies"
+  },
+  "compliance": {
+    "pci_dss": {
+      "required_scanning": true,
+      "max_critical_vulns": 0,
+      "require_signatures": true
+    },
+    "gdpr": {
+      "require_encryption": true,
+      "require_signatures": true,
+      "max_critical_vulns": 0
+    }
+  },
+  "environments": {
+    "production": {
+      "strict_mode": true,
+      "require_signatures": true,
+      "max_critical_vulns": 0
+    },
+    "staging": {
+      "strict_mode": true,
+      "require_signatures": true,
+      "max_critical_vulns": 1
+    },
+    "development": {
+      "strict_mode": false,
+      "require_signatures": false,
+      "max_critical_vulns": 5
+    }
+  },
+  "approved_registries": [
+    "registry.example.com",
+    "docker.io",
+    "gcr.io",
+    "mcr.microsoft.com",
+    "registry.access.redhat.com"
+  ]
+}

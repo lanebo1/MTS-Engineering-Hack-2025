@@ -1,0 +1,23 @@
+[req]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+C = RU
+ST = Moscow
+L = Moscow
+O = MTS
+OU = Container Security
+CN = container-security-webhook.container-security.svc
+
+[v3_req]
+keyUsage = keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = container-security-webhook
+DNS.2 = container-security-webhook.container-security
+DNS.3 = container-security-webhook.container-security.svc
+DNS.4 = container-security-webhook.container-security.svc.cluster.local

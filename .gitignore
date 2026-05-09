@@ -1,0 +1,129 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# Go vendor directory
+vendor/
+
+# Go build cache
+.cache/
+
+# Dependency directories
+node_modules/
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Kubernetes
+.kube/
+
+# Docker
+.dockerignore
+
+# Minikube
+.minikube/
+
+# Certificates and secrets (should not be committed)
+certs/*.key
+certs/*.pem
+certs/*.crt
+*.key
+*.pem
+*.crt
+
+# Log files
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build artifacts
+dist/
+build/
+bin/
+
+# Test results
+test-results/
+coverage/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Git
+.git/
+.gitignore~
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Documentation artifacts
+*.pdf
+*.doc
+*.docx
+
+# Archive files
+*.tar.gz
+*.zip
+*.rar
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Configuration overrides
+config.local.*
+*.local.yaml
+*.local.yml
+
+# Prometheus/Grafana data
+data/
+grafana/data/
+
+# OPA policies cache
+.policies/
+
+# Trivy cache
+.trivy/
+
+# Cosign keys and artifacts
+cosign.key
+cosign.pub
+*.sig
+*.att

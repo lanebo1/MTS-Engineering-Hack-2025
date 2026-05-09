@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: container-security-webhook-config
+  namespace: container-security
+  labels:
+    app: container-security-webhook
+    component: admission-controller
+data:
+  scanner.yaml: |
+    # Trivy Scanner Configuration
+    scanner:
+      timeout: 300s
+      cache_dir: "/tmp/trivy-cache"
+      reports_dir: "/tmp/trivy-reports"
+      skip_update: false
+      update_interval: 24h
+      vulnerability_types: ["os", "library"]
+      severity: ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+      ignore_unfixed: false
+      format: "json"
+      output: "/tmp/scan-results.json"
+
+    # Scanner endpoints
+    endpoints:
+      trivy_scanner: "http://trivy-scanner.container-security.svc:8080"
+
+  opa.yaml: |
+    # OPA Policy Evaluator Configuration
+    evaluator:
+      policy_dir: "/opt/opa/policies"
+      data_dir: "/opt/opa/data"
+      query: "data.container_security.allow"
+      timeout: 30s
+
+    # Policy files
+    policies:
+      - "vulnerability_policy.rego"
+      - "signature_policy.rego"
+      - "compliance_policy.rego"
+      - "container_security.rego"
+      - "base_image_policy.rego"
+
+    # Security thresholds
+    thresholds:
+      critical_vulnerabilities: 0
+      high_vulnerabilities: 5
+      cvss_score_threshold: 7.0
+
+  cosign.yaml: |
+    # Cosign Verifier Configuration
+    verifier:
+      keyless: true
+      rekor_url: "https://rekor.sigstore.dev"
+      fulcio_url: "https://fulcio.sigstore.dev"
+      oidc_issuer: "https://oauth2.sigstore.dev/auth"
+      timeout: 60s
+
+    # Signature requirements
+    signature:
+      require_signature: true
+      allow_unsigned_in_dev: false
+      allowed_keyless_issuers:
+        - "https://token.actions.githubusercontent.com"
+        - "https://oauth2.sigstore.dev/auth"
+
+    # Certificate validation
+    certificate:
+      validate_cert_chain: true
+      check_revocation: false
+      allowed_subjects: []
+

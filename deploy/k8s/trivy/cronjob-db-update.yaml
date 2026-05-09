@@ -1,0 +1,53 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: trivy-db-update
+  namespace: container-security
+  labels:
+    app: trivy-scanner
+    component: db-updater
+spec:
+  schedule: "0 2 * * *"  # Run daily at 2 AM
+  concurrencyPolicy: Forbid  # Don't allow concurrent runs
+  failedJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      activeDeadlineSeconds: 1800  # 30 minutes timeout
+      template:
+        metadata:
+          labels:
+            app: trivy-scanner
+            component: db-updater
+        spec:
+          serviceAccountName: trivy-scanner-sa
+          restartPolicy: OnFailure
+          containers:
+          - name: trivy-db-updater
+            image: aquasecurity/trivy:latest
+            command:
+            - trivy
+            - --cache-dir
+            - /opt/trivy/cache
+            - image
+            - --download-db-only
+            volumeMounts:
+            - name: trivy-cache
+              mountPath: /opt/trivy/cache
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "100m"
+              limits:
+                memory: "512Mi"
+                cpu: "200m"
+          volumes:
+          - name: trivy-cache
+            persistentVolumeClaim:
+              claimName: trivy-cache-pvc
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000

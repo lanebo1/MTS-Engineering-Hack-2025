@@ -1,0 +1,153 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: container-security
+  labels:
+    app: grafana
+    component: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+        component: monitoring
+    spec:
+      serviceAccountName: grafana-sa
+      automountServiceAccountToken: false
+      containers:
+      - name: grafana
+        image: grafana/grafana:10.2.0
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: "admin"  # Change this in production
+        - name: GF_USERS_ALLOW_SIGN_UP
+          value: "false"
+        - name: GF_INSTALL_PLUGINS
+          value: ""
+        - name: GF_ANGULAR_SUPPORT_ENABLED
+          value: "false"
+        volumeMounts:
+        - name: grafana-storage
+          mountPath: /var/lib/grafana
+        - name: grafana-datasources
+          mountPath: /etc/grafana/provisioning/datasources
+          readOnly: true
+        - name: grafana-dashboards
+          mountPath: /etc/grafana/provisioning/dashboards
+          readOnly: true
+        - name: grafana-dashboard-files
+          mountPath: /var/lib/grafana/dashboards
+          readOnly: true
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+            ephemeral-storage: "100Mi"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+            ephemeral-storage: "1Gi"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          timeoutSeconds: 10
+          failureThreshold: 5
+      volumes:
+      - name: grafana-storage
+        emptyDir:
+          sizeLimit: 1Gi
+      - name: grafana-datasources
+        configMap:
+          name: grafana-datasources
+      - name: grafana-dashboards
+        configMap:
+          name: grafana-dashboards
+      - name: grafana-dashboard-files
+        configMap:
+          name: grafana-dashboard-container-security
+      securityContext:
+        fsGroup: 472
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: container-security
+  labels:
+    app: grafana
+    component: monitoring
+spec:
+  selector:
+    app: grafana
+  ports:
+  - name: http
+    port: 3001
+    targetPort: 3000
+    protocol: TCP
+  type: NodePort
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: grafana-sa
+  namespace: container-security
+  labels:
+    app: grafana
+    component: monitoring
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: container-security
+  labels:
+    app: grafana
+    component: monitoring
+data:
+  datasource.yml: |
+    apiVersion: 1
+    datasources:
+    - name: Prometheus
+      type: prometheus
+      url: http://prometheus.container-security.svc.cluster.local:9090
+      access: proxy
+      isDefault: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: container-security
+  labels:
+    app: grafana
+    component: monitoring
+data:
+  dashboards.yml: |
+    - name: 'container-security'
+      orgId: 1
+      folder: 'Container Security'
+      type: file
+      disableDeletion: false
+      updateIntervalSeconds: 10
+      allowUiUpdates: true
+      options:
+        path: /var/lib/grafana/dashboards
+

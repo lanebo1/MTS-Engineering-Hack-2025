@@ -1,0 +1,176 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: container-security-webhook
+  namespace: container-security
+  labels:
+    app: container-security-webhook
+    component: admission-controller
+    security: enabled
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: container-security-webhook
+  template:
+    metadata:
+      labels:
+        app: container-security-webhook
+        component: admission-controller
+        security: enabled
+    spec:
+      serviceAccountName: container-security-webhook-sa
+      containers:
+      - name: webhook-server
+        image: repozitorij-dlya-raboty-7316-webhook-server:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8443
+          name: https
+          protocol: TCP
+        - containerPort: 8081
+          name: metrics
+          protocol: TCP
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: TRIVY_SCANNER_URL
+          value: "http://trivy-scanner.container-security.svc:8080"
+        # Configuration file paths
+        - name: SCANNER_CONFIG
+          value: "/opt/webhook/config/scanner.yaml"
+        - name: OPA_CONFIG
+          value: "/opt/webhook/config/opa.yaml"
+        - name: COSIGN_CONFIG
+          value: "/opt/webhook/config/cosign.yaml"
+        - name: NOTIFICATIONS_CONFIG
+          value: "/opt/webhook/config/notifications/notifications.yaml"
+        # TLS Configuration
+        - name: TLS_CERT_FILE
+          value: "/opt/webhook/certs/tls.crt"
+        - name: TLS_KEY_FILE
+          value: "/opt/webhook/certs/tls.key"
+        # Resource limits
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        # Liveness probe
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8081
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        # Readiness probe
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8081
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        # Volume mounts
+        volumeMounts:
+        - name: webhook-config
+          mountPath: /opt/webhook/config
+          readOnly: true
+        - name: webhook-notifications-config
+          mountPath: /opt/webhook/config/notifications
+          readOnly: true
+        - name: webhook-certs
+          mountPath: /opt/webhook/certs
+          readOnly: true
+        - name: opa-policies
+          mountPath: /opt/webhook/policies
+          readOnly: true
+        - name: opa-data
+          mountPath: /opt/webhook/data
+          readOnly: true
+        # Security context
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      # Init container for configuration validation
+      initContainers:
+      - name: config-validator
+        image: alpine:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Validating configuration files..."
+          ls -la /opt/webhook/config/
+          echo "Configuration validation passed"
+        volumeMounts:
+        - name: webhook-config
+          mountPath: /opt/webhook/config
+          readOnly: true
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Mi"
+            cpu: "50m"
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+      volumes:
+      - name: webhook-config
+        configMap:
+          name: container-security-webhook-config
+      - name: webhook-notifications-config
+        configMap:
+          name: container-security-webhook-notifications-config
+      - name: webhook-certs
+        secret:
+          secretName: container-security-webhook-tls
+      - name: opa-policies
+        configMap:
+          name: container-security-opa-policies
+      - name: opa-data
+        configMap:
+          name: container-security-opa-data
+      # Security context
+      securityContext:
+        fsGroup: 1000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: container-security-webhook
+  namespace: container-security
+  labels:
+    app: container-security-webhook
+    component: admission-controller
+    security: enabled
+spec:
+  selector:
+    app: container-security-webhook
+  ports:
+  - name: https
+    port: 443
+    targetPort: 8443
+    protocol: TCP
+  - name: metrics
+    port: 8081
+    targetPort: 8081
+    protocol: TCP
+  type: ClusterIP

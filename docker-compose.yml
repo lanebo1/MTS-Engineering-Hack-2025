@@ -1,0 +1,117 @@
+services:
+  # Trivy Scanner Service - Vulnerability scanning
+  trivy-scanner:
+    build:
+      context: .
+      dockerfile: docker/trivy-scanner.Dockerfile
+    container_name: trivy-scanner
+    ports:
+      - "8081:8080"  # Avoid conflict with webhook metrics
+    environment:
+      - LOG_LEVEL=info
+    volumes:
+      - ./docker/scripts:/opt/trivy/scripts:ro
+      - trivy-cache:/opt/trivy/cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  # OPA Policy Engine - Policy evaluation
+  opa:
+    build:
+      context: .
+      dockerfile: docker/opa.Dockerfile
+    container_name: opa-engine
+    ports:
+      - "8181:8181"
+    volumes:
+      - ./policies:/opt/opa/policies:ro
+      - ./policies/data.json:/opt/opa/data.json:ro
+    command: ["/usr/local/bin/opa", "run", "--server", "--addr", "0.0.0.0:8181", "--log-level", "info"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8181/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  # Webhook Server - Main admission controller
+  webhook-server:
+    build:
+      context: .
+      dockerfile: docker/webhook-server.Dockerfile
+    container_name: container-security-webhook
+    ports:
+      - "8443:8443"  # HTTPS webhook endpoint
+      - "8080:8081"  # Metrics and health checks (internal port 8081)
+    environment:
+      - LOG_LEVEL=info
+      - TRIVY_SCANNER_URL=http://trivy-scanner:8080
+      - OPA_URL=http://opa:8181
+      - SCAN_TIMEOUT=300
+      - VERIFY_TIMEOUT=60
+      - CRITICAL_THRESHOLD=0
+      - HIGH_THRESHOLD=5
+      - ADMISSION_MODE=strict
+    command: ["/usr/local/bin/webhook-server", "--metrics-port", "8081"]
+    volumes:
+      - ./policies:/opt/webhook/policies:ro
+      - ./certs:/opt/webhook/certs:ro
+    depends_on:
+      trivy-scanner:
+        condition: service_healthy
+      opa:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # Optional: Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+
+  # Optional: Grafana for visualization (disabled by default to avoid conflicts with Kubernetes)
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: grafana
+  #   ports:
+  #     - "3001:3000"
+  #   environment:
+  #     - GF_SECURITY_ADMIN_USER=admin
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin
+  #     - GF_USERS_ALLOW_SIGN_UP=false
+  #   volumes:
+  #     - grafana-data:/var/lib/grafana
+  #     - ./deploy/k8s/monitoring/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml:ro
+  #     - ./deploy/k8s/monitoring/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+  #   depends_on:
+  #     - prometheus
+  #   restart: unless-stopped
+
+volumes:
+  trivy-cache:
+  prometheus-data:
+  grafana-data:

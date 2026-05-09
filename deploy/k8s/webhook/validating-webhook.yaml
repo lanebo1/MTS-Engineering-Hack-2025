@@ -1,0 +1,54 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: container-security-webhook
+  namespace: container-security
+  labels:
+    app: container-security-webhook
+    component: admission-controller
+    security: enabled
+webhooks:
+- name: container-security-validator.container-security-mts.svc
+  clientConfig:
+    service:
+      name: container-security-webhook
+      namespace: container-security
+      path: "/admission"
+      port: 443  # Use HTTPS port
+    caBundle: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUUwRENDQTdpZ0F3SUJBZ0lVZnBMdVFMTjMvUmNGOFFvRytnWnN0aTl0Uytzd0RRWUpLb1pJaHZjTkFRRUwKQlFBd2daWXhDekFKQmdOVkJBWVRBbEpWTVE4d0RRWURWUVFJREFaTmIzTmpiM2N4RHpBTkJnTlZCQWNNQmsxdgpjMk52ZHpFTU1Bb0dBMVVFQ2d3RFRWUlRNUnN3R1FZRFZRUUxEQkpEYjI1MFlXbHVaWElnVTJWamRYSnBkSGt4Ck9qQTRCZ05WQkFNTU1XTnZiblJoYVc1bGNpMXpaV04xY21sMGVTMTNaV0pvYjI5ckxtTnZiblJoYVc1bGNpMXoKWldOMWNtbDBlUzV6ZG1Nd0hoY05NalV4TURBME1UZ3hOREEyV2hjTk1qWXhNREEwTVRneE5EQTJXakNCbGpFTApNQWtHQTFVRUJoTUNVbFV4RHpBTkJnTlZCQWdNQmsxdmMyTnZkekVQTUEwR0ExVUVCd3dHVFc5elkyOTNNUXd3CkNnWURWUVFLREFOTlZGTXhHekFaQmdOVkJBc01Fa052Ym5SaGFXNWxjaUJUWldOMWNtbDBlVEU2TURnR0ExVUUKQXd3eFkyOXVkR0ZwYm1WeUxYTmxZM1Z5YVhSNUxYZGxZbWh2YjJzdVkyOXVkR0ZwYm1WeUxYTmxZM1Z5YVhSNQpMbk4yWXpDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTnpDU0xHNlJoMFJ4NTdvCm0zMHJKN3VqS1d6YzFrUEFNanl1M3JYcmh0bzNSaFFyWlgxOUZwNjYrZmNtbVY5d052d2xjZmlXRlRGcmc1WnIKczVNYk14VVZwYTlPUWVKVlEvRzdHejJ5N3E0dXpSMGtOZFNNTjVVY2FpcGFGcTVQM0pra0xUKzFnTjBRL04vQQozeG04VnR3UEdVaWRwaHBmVWowcDh4WElqblpGVmwrL1JCRHZWS0J3T3ZxRkp3QThmQThxS0JjMzVuMGZqK1pICnVGeGNWbzV2RjZDTytOK09FSEo3SnRRcUsyWERiZVl0bmF4cmxrMEZlQzRza0p5Q3BQTWtGSDJkbzdqVElTL3MKWlRERUxicmFCcVBjcDB2Rmg3T2RUaldUdWFaRFZ1YVFQUnAwZThUNjlQeGd2bUY1V2JkTk5heHNSZE1iRVl2dApvWGlSQk04Q0F3RUFBYU9DQVJJd2dnRU9NQXNHQTFVZER3UUVBd0lFTURBVEJnTlZIU1VFRERBS0JnZ3JCZ0VGCkJRY0RBVENCeWdZRFZSMFJCSUhDTUlHL2docGpiMjUwWVdsdVpYSXRjMlZqZFhKcGRIa3RkMlZpYUc5dmE0SXQKWTI5dWRHRnBibVZ5TFhObFkzVnlhWFI1TFhkbFltaHZiMnN1WTI5dWRHRnBibVZ5TFhObFkzVnlhWFI1Z2pGagpiMjUwWVdsdVpYSXRjMlZqZFhKcGRIa3RkMlZpYUc5dmF5NWpiMjUwWVdsdVpYSXRjMlZqZFhKcGRIa3VjM1pqCmdqOWpiMjUwWVdsdVpYSXRjMlZqZFhKcGRIa3RkMlZpYUc5dmF5NWpiMjUwWVdsdVpYSXRjMlZqZFhKcGRIa3UKYzNaakxtTnNkWE4wWlhJdWJHOWpZV3d3SFFZRFZSME9CQllFRkNyMml5QVZqL2xRSkFKNVBvMmZjcExwd1dxaQpNQTBHQ1NxR1NJYjNEUUVCQ3dVQUE0SUJBUURLK1g4eU5VTGF1SWtZK0ZHSVVQQW5lSzZ6UUdiOTdrRzZQYkc4Ck4yUzRIT3ptZjd4eXhHU0NKZmwzSmVOQ0ZLRm9DajJySEloUCtlYVg1bGY1eVZMT3ZQbkpzZkMrb3FyREVjQSsKMitSU1d5bGREQUllRHFTdUZmQ1NkUXYzNjRXN21TekVqL2MxNXdrQy93dTJvMkVnUmIwVHc2VnFtV1hlNk0xMgo2b1NTYno4SnQyRzBZdmJZY1RyblBRZHNBeGJGWjgxU2hPelh6RzkzZUZmQUd4TjNyazNCckMvM2J5ZjVJSks1CjltZXpyYXpNT2lTOURHQXdoWnVuanh1VmNQM1ErczJkM2hVcWx3MFYyZmVSSzY1NWFIa3Q2ZE5nWFNsQ0FIbm4KdWkwbnVYYXRZdEVVZG16clZFNUdxSkhmYjEwTTdOY0hONXJMNk5iUmFZaXluWTBQCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K"
+  rules:
+  - operations: ["CREATE", "UPDATE"]
+    apiGroups: [""]
+    apiVersions: ["v1"]
+    resources: ["pods"]
+    scope: "Namespaced"
+  - operations: ["CREATE", "UPDATE"]
+    apiGroups: ["apps"]
+    apiVersions: ["v1"]
+    resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+    scope: "Namespaced"
+  - operations: ["CREATE", "UPDATE"]
+    apiGroups: ["batch"]
+    apiVersions: ["v1"]
+    resources: ["jobs", "cronjobs"]
+    scope: "Namespaced"
+  admissionReviewVersions: ["v1", "v1beta1"]
+  sideEffects: None
+  timeoutSeconds: 30
+  failurePolicy: Ignore  # Allow deployments if webhook fails (for demo purposes)
+  matchPolicy: Equivalent
+  namespaceSelector:
+    matchExpressions:
+    - key: container-security/enabled
+      operator: In
+      values:
+      - "true"
+    - key: kubernetes.io/metadata.name
+      operator: NotIn
+      values:
+      - container-security
+      - kube-system
+      - kube-public
+      - kube-node-lease
+      - default
+  objectSelector: {}  # Empty selector means all objects

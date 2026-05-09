@@ -1,0 +1,38 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: container-security-webhook-issuer
+  namespace: container-security
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: container-security-webhook-cert
+  namespace: container-security
+spec:
+  secretName: container-security-webhook-tls
+  issuerRef:
+    name: container-security-webhook-issuer
+    kind: Issuer
+  dnsNames:
+  - container-security-webhook
+  - container-security-webhook.container-security
+  - container-security-webhook.container-security.svc
+  - container-security-webhook.container-security.svc.cluster.local
+---
+# Certificate resource that will inject CA bundle into webhook
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: container-security-webhook-ca-cert
+  namespace: container-security
+spec:
+  secretName: container-security-webhook-ca
+  issuerRef:
+    name: container-security-webhook-issuer
+    kind: Issuer
+  dnsNames:
+  - container-security-webhook.container-security.svc
+  - container-security-webhook.container-security.svc.cluster.local

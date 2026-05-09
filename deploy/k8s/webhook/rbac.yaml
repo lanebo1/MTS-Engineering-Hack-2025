@@ -1,0 +1,69 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: container-security-webhook-sa
+  namespace: container-security
+  labels:
+    app: container-security-webhook
+    component: admission-controller
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: container-security-webhook-role
+  labels:
+    app: container-security-webhook
+    component: admission-controller
+rules:
+# Admission webhook permissions - read access to admission reviews
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["validatingadmissionwebhooks"]
+  verbs: ["get", "list", "watch", "update", "patch"]
+
+# Pod permissions for validation context
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints", "namespaces"]
+  verbs: ["get", "list", "watch"]
+
+# Workload permissions for validation
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+
+# Batch job permissions
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch"]
+
+# Event permissions for logging/security events
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "patch", "update"]
+
+# Secret permissions for certificate access
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "watch"]
+  resourceNames: ["container-security-webhook-tls", "container-security-webhook-ca"]
+
+# ConfigMap permissions for configuration
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch"]
+  resourceNames: ["container-security-webhook-config"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: container-security-webhook-rb
+  labels:
+    app: container-security-webhook
+    component: admission-controller
+subjects:
+- kind: ServiceAccount
+  name: container-security-webhook-sa
+  namespace: container-security
+roleRef:
+  kind: ClusterRole
+  name: container-security-webhook-role
+  apiGroup: rbac.authorization.k8s.io

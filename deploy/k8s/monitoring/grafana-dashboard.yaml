@@ -1,0 +1,209 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-container-security
+  namespace: container-security
+  labels:
+    app: grafana
+    component: monitoring
+    grafana_dashboard: "1"
+data:
+  container-security-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Container Security Monitoring",
+        "tags": ["container", "security", "kubernetes"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Admission Request Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(container_security_admission_requests_total[5m])",
+                "legendFormat": "Requests per second"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": 2,
+            "title": "Admission Decisions",
+            "type": "bargauge",
+            "targets": [
+              {
+                "expr": "container_security_admission_requests_allowed_total",
+                "legendFormat": "Allowed"
+              },
+              {
+                "expr": "container_security_admission_requests_denied_total",
+                "legendFormat": "Denied"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 0
+            }
+          },
+          {
+            "id": 3,
+            "title": "Security Violations by Reason",
+            "type": "table",
+            "targets": [
+              {
+                "expr": "container_security_admission_requests_by_reason_total",
+                "legendFormat": "{{reason}} ({{severity}})"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 24,
+              "x": 0,
+              "y": 8
+            }
+          },
+          {
+            "id": 4,
+            "title": "Scan Performance",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(container_security_scans_total[5m])",
+                "legendFormat": "Scan rate"
+              },
+              {
+                "expr": "histogram_quantile(0.95, rate(container_security_scan_duration_seconds_bucket[5m]))",
+                "legendFormat": "95th percentile scan duration"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 16
+            }
+          },
+          {
+            "id": 5,
+            "title": "Vulnerabilities Found",
+            "type": "heatmap",
+            "targets": [
+              {
+                "expr": "container_security_vulnerabilities_found",
+                "legendFormat": "Vulnerabilities"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 16
+            }
+          },
+          {
+            "id": 6,
+            "title": "Database Updates",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "container_security_db_updates_total",
+                "legendFormat": "DB Updates"
+              }
+            ],
+            "gridPos": {
+              "h": 4,
+              "w": 8,
+              "x": 0,
+              "y": 24
+            }
+          },
+          {
+            "id": 7,
+            "title": "Last DB Update",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "container_security_last_db_update_timestamp",
+                "legendFormat": "Last Update"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "dateTimeAsIso"
+              }
+            },
+            "gridPos": {
+              "h": 4,
+              "w": 8,
+              "x": 8,
+              "y": 24
+            }
+          },
+          {
+            "id": 8,
+            "title": "Admission Request Duration",
+            "type": "heatmap",
+            "targets": [
+              {
+                "expr": "container_security_admission_request_duration_seconds",
+                "legendFormat": "Request duration"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 8,
+              "x": 16,
+              "y": 24
+            }
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "timepicker": {},
+        "templating": {
+          "list": []
+        },
+        "annotations": {
+          "list": []
+        },
+        "refresh": "30s",
+        "schemaVersion": 27,
+        "version": 0,
+        "links": []
+      }
+    }
+---
+# Grafana Dashboard Provisioning Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: container-security
+  labels:
+    app: grafana
+    component: monitoring
+data:
+  dashboards.yml: |
+    apiVersion: 1
+    providers:
+    - name: 'container-security'
+      orgId: 1
+      folder: 'Container Security'
+      type: file
+      disableDeletion: false
+      updateIntervalSeconds: 10
+      allowUiUpdates: true
+      options:
+        path: /var/lib/grafana/dashboards
+

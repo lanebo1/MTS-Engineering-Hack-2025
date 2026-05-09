@@ -1,0 +1,121 @@
+---
+# Пример безопасного развертывания приложения МТС
+# Этот deployment пройдет все проверки безопасности
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secure-mts-app
+  namespace: production
+  labels:
+    app: secure-mts-app
+    team: backend
+    environment: production
+  annotations:
+    # Аннотации для системы безопасности
+    container-security/scanned: "true"
+    container-security/signed: "true"
+    container-security/compliance: "pci-dss,gdpr"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: secure-mts-app
+  template:
+    metadata:
+      labels:
+        app: secure-mts-app
+        team: backend
+        environment: production
+        security-policy: "mts-production"
+    spec:
+      containers:
+      - name: app
+        # Образ должен быть подписан и просканирован
+        image: nginx:1.24-alpine
+        ports:
+        - containerPort: 80
+          name: http
+        # Resource limits для предотвращения DoS
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        # Environment variables
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: TEAM
+          value: "backend"
+        # Volume mounts (read-only)
+        # volumeMounts:
+        # - name: config
+        #   mountPath: /app/config
+        #   readOnly: true
+      # Sidecar контейнер для логирования (опционально)
+      # - name: logging-sidecar
+      #   image: registry.mts.ru/logging/fluent-bit:v1.9.0
+      #   resources:
+      #     requests:
+      #       memory: "64Mi"
+      #       cpu: "50m"
+      #     limits:
+      #       memory: "128Mi"
+      #       cpu: "100m"
+      #   volumeMounts:
+      #   - name: logs
+      #     mountPath: /var/log/app
+      # Init контейнер для подготовки
+      # initContainers:
+      # - name: init-migrations
+      #   image: registry.mts.ru/backend/secure-app:v1.2.3
+      #   command: ["/app/migrate"]
+      #   env:
+      #   - name: DB_URL
+      #     valueFrom:
+      #       secretKeyRef:
+      #         name: db-secret
+      #         key: url
+      #   volumeMounts:
+      #   - name: migrations
+      #     mountPath: /app/migrations
+      #     readOnly: true
+      # Volumes
+      # volumes:
+      # - name: config
+      #   configMap:
+      #     name: app-config
+      # - name: logs
+      #   emptyDir: {}
+      # - name: migrations
+      #   configMap:
+      #     name: db-migrations
+      # Service account с минимальными правами
+      # serviceAccountName: secure-app-sa
+      # Node selector для compliance
+      # nodeSelector:
+      #   environment: production
+      #   compliance: pci-dss
+      # Tolerations для scheduling
+      # tolerations:
+      # - key: "security"
+      #   operator: "Equal"
+      #   value: "high"
+      #   effect: "NoSchedule"
+

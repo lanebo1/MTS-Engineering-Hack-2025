@@ -1,0 +1,31 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'container-security-webhook'
+    static_configs:
+      - targets: ['webhook-server:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'trivy-scanner'
+    static_configs:
+      - targets: ['trivy-scanner:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'opa-engine'
+    static_configs:
+      - targets: ['opa:8181']
+    metrics_path: '/metrics'
+    scrape_interval: 30s

@@ -1,0 +1,19 @@
+services:
+  # Enable Grafana for local development (when not using Kubernetes)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./deploy/k8s/monitoring/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml:ro
+      - ./deploy/k8s/monitoring/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      - ./deploy/k8s/monitoring/container-security-dashboard.json:/var/lib/grafana/dashboards/container-security-dashboard.json:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped

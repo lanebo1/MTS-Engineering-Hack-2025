@@ -1,0 +1,130 @@
+# Security Policies Configuration
+# Defines security thresholds and policies for CI/CD pipeline
+
+# Vulnerability thresholds
+vulnerability_thresholds:
+  # Maximum allowed vulnerabilities by severity
+  critical: 0          # Block if any critical vulnerabilities found
+  high: 5             # Block if more than 5 high vulnerabilities
+  medium: 20          # Warning threshold
+  low: 50             # Information threshold
+
+  # CVSS score thresholds
+  max_cvss_score: 7.0  # Block if any vulnerability has CVSS > 7.0
+
+# Blocking policies
+blocking_policies:
+  # Whether to block deployment on policy violations
+  enabled: true
+
+  # Environments where blocking is enforced
+  environments:
+    - production
+    - staging
+
+  # Branches where blocking is enforced
+  branches:
+    - main
+    - master
+    - develop
+
+  # Signature requirements
+  signature_requirements:
+    enabled: true
+    require_signatures: true
+    allow_unsigned_fallback: false
+    signing_key_type: "keyless"  # keyless or keypair
+
+# Scan configuration
+scan_config:
+  # Scan timeout
+  timeout: 600s
+
+  # Severity levels to scan for
+  severity_levels:
+    - CRITICAL
+    - HIGH
+    - MEDIUM
+    - LOW
+
+  # Scan types to perform
+  scan_types:
+    - os
+    - library
+
+  # Skip database update (for faster scans)
+  skip_db_update: false
+
+# Notification settings
+notifications:
+  # Send notifications on security events
+  enabled: true
+
+  # Notify on these events
+  events:
+    - scan_completed
+    - vulnerabilities_found
+    - deployment_blocked
+    - policy_violation
+
+  # Notification channels (webhook URLs)
+  channels: []
+
+# Exception policies
+exceptions:
+  # Allow certain images to bypass security checks
+  allowed_images: []
+
+  # Allow certain vulnerabilities (by CVE ID)
+  allowed_vulnerabilities: []
+
+  # Allow unsigned images (exceptions to signature requirements)
+  allowed_unsigned_images: []
+    # Example:
+    # - image: "legacy-app:v1.0"
+    #   reason: "Legacy application without signing capability"
+    #   expires: "2024-12-31"
+
+  # Temporary exceptions with expiration
+  temporary_exceptions:
+    # Example:
+    # - image: "nginx:1.21"
+    #   reason: "Legacy application dependency"
+    #   expires: "2024-12-31"
+    #   allowed_vulnerabilities: ["CVE-2023-12345"]
+
+# Compliance policies
+compliance:
+  # Enforce compliance with standards
+  enabled: true
+
+  # Supported compliance standards
+  standards:
+    - CIS
+    - NIST
+    - PCI-DSS
+
+# Reporting
+reporting:
+  # Generate detailed reports
+  detailed_reports: true
+
+  # Store reports in artifacts
+  store_reports: true
+
+  # Report retention period
+  retention_days: 30
+
+# Monitoring
+monitoring:
+  # Export metrics to Prometheus
+  prometheus_enabled: true
+
+  # Metrics endpoint
+  metrics_endpoint: "/metrics"
+
+  # Custom metrics
+  custom_metrics:
+    - scan_duration
+    - vulnerabilities_by_severity
+    - blocked_deployments

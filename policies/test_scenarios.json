@@ -1,0 +1,434 @@
+{
+  "test_cases": [
+    {
+      "name": "vulnerability_policy_test_critical",
+      "description": "Test blocking image with critical vulnerabilities",
+      "input": {
+        "scan_results": {
+          "summary": {
+            "critical": 2,
+            "high": 5,
+            "medium": 10,
+            "low": 20,
+            "total": 37
+          },
+          "vulnerabilities": [
+            {
+              "id": "CVE-2023-1234",
+              "severity": "CRITICAL",
+              "cvss_score": 9.8,
+              "package": "openssl",
+              "version": "1.1.1"
+            },
+            {
+              "id": "CVE-2023-5678",
+              "severity": "HIGH",
+              "cvss_score": 8.5,
+              "package": "nginx",
+              "version": "1.21.0"
+            }
+          ]
+        },
+        "image": "nginx:1.21",
+        "deployment_context": {
+          "environment": "prod",
+          "namespace": "production",
+          "team": "web"
+        }
+      },
+      "expected": {
+        "vulnerability_policy_allow": false,
+        "reason": "Image contains critical vulnerabilities"
+      }
+    },
+    {
+      "name": "vulnerability_policy_test_high_cvss",
+      "description": "Test blocking image with high CVSS score vulnerabilities",
+      "input": {
+        "scan_results": {
+          "summary": {
+            "critical": 0,
+            "high": 3,
+            "medium": 8,
+            "low": 15,
+            "total": 26
+          },
+          "vulnerabilities": [
+            {
+              "id": "CVE-2023-9999",
+              "severity": "HIGH",
+              "cvss_score": 7.8,
+              "package": "libcurl",
+              "version": "7.88.0"
+            },
+            {
+              "id": "CVE-2023-8888",
+              "severity": "MEDIUM",
+              "cvss_score": 6.5,
+              "package": "zlib",
+              "version": "1.2.13"
+            }
+          ]
+        },
+        "image": "alpine:3.18",
+        "deployment_context": {
+          "environment": "prod",
+          "namespace": "production",
+          "team": "api"
+        }
+      },
+      "expected": {
+        "vulnerability_policy_allow": false,
+        "reason": "Image contains high-risk vulnerabilities (CVSS >= 7.0)"
+      }
+    },
+    {
+      "name": "vulnerability_policy_test_allow",
+      "description": "Test allowing image with no critical/high CVSS vulnerabilities",
+      "input": {
+        "scan_results": {
+          "summary": {
+            "critical": 0,
+            "high": 0,
+            "medium": 5,
+            "low": 12,
+            "total": 17
+          },
+          "vulnerabilities": [
+            {
+              "id": "CVE-2023-7777",
+              "severity": "MEDIUM",
+              "cvss_score": 5.5,
+              "package": "busybox",
+              "version": "1.35.0"
+            }
+          ]
+        },
+        "image": "alpine:3.18",
+        "deployment_context": {
+          "environment": "prod",
+          "namespace": "production",
+          "team": "api"
+        }
+      },
+      "expected": {
+        "vulnerability_policy_allow": true
+      }
+    },
+    {
+      "name": "signature_policy_test_prod_require",
+      "description": "Test requiring signature in production",
+      "input": {
+        "scan_results": {
+          "summary": {
+            "critical": 0,
+            "high": 0,
+            "medium": 2,
+            "low": 5,
+            "total": 7
+          }
+        },
+        "signature_verified": false,
+        "image": "nginx:1.24",
+        "deployment_context": {
+          "environment": "prod",
+          "namespace": "production",
+          "team": "web"
+        }
+      },
+      "expected": {
+        "signature_policy_allow": false,
+        "reason": "Image signature verification required for production"
+      }
+    },
+    {
+      "name": "signature_policy_test_prod_allow",
+      "description": "Test allowing signed image in production",
+      "input": {
+        "scan_results": {
+          "summary": {
+            "critical": 0,
+            "high": 0,
+            "medium": 2,
+            "low": 5,
+            "total": 7
+          }
+        },
+        "signature_verified": true,
+        "image": "nginx:1.24",
+        "deployment_context": {
+          "environment": "prod",
+          "namespace": "production",
+          "team": "web"
+        }
+      },
+      "expected": {
+        "signature_policy_allow": true
+      }
+    },
+    {
+      "name": "signature_policy_test_dev_allow",
+      "description": "Test allowing unsigned image in development",
+      "input": {
+        "scan_results": {
+          "summary": {
+            "critical": 0,
+            "high": 1,
+            "medium": 3,
+            "low": 8,
+            "total": 12
+          }
+        },
+        "signature_verified": false,
+        "image": "myapp:dev",
+        "deployment_context": {
+          "environment": "dev",
+          "namespace": "development",
+          "team": "backend"
+        }
+      },
+      "expected": {
+        "signature_policy_allow": true
+      }
+    },
+    {
+      "name": "base_image_policy_test_approved",
+      "description": "Test allowing approved base image",
+      "input": {
+        "image": "alpine:3.18",
+        "scan_results": {
+          "summary": {
+            "critical": 0,
+            "high": 0,
+            "medium": 1,
+            "low": 3,
+            "total": 4
+          }
+        },
+        "signature_verified": true,
+        "deployment_context": {
+          "environment": "prod",
+          "namespace": "production",
+          "team": "api"
+        }
+      },
+      "expected": {
+        "base_image_policy_allow": true
+      }
+    },
+    {
+      "name": "base_image_policy_test_unapproved",
+      "description": "Test blocking unapproved base image in production",
+      "input": {
+        "image": "centos:8",
+        "scan_results": {
+          "summary": {
+            "critical": 0,
+            "high": 0,
+            "medium": 2,
+            "low": 5,
+            "total": 7
+          }
+        },
+        "signature_verified": true,
+        "deployment_context": {
+          "environment": "prod",
+          "namespace": "production",
+          "team": "api"
+        }
+      },
+      "expected": {
+        "base_image_policy_allow": false,
+        "reason": "Base image restrictions apply in production environment"
+      }
+    },
+    {
+      "name": "base_image_policy_test_dev_allow",
+      "description": "Test allowing unapproved base image in development",
+      "input": {
+        "image": "centos:8",
+        "scan_results": {
+          "summary": {
+            "critical": 1,
+            "high": 2,
+            "medium": 4,
+            "low": 8,
+            "total": 15
+          }
+        },
+        "signature_verified": false,
+        "deployment_context": {
+          "environment": "dev",
+          "namespace": "development",
+          "team": "backend"
+        }
+      },
+      "expected": {
+        "base_image_policy_allow": true
+      }
+    },
+    {
+      "name": "compliance_policy_test_pci_dss_violation",
+      "description": "Test PCI DSS compliance violation",
+      "input": {
+        "image": "alpine:3.18",
+        "scan_results": {
+          "summary": {
+            "critical": 1,
+            "high": 0,
+            "medium": 3,
+            "low": 7,
+            "total": 11
+          }
+        },
+        "signature_verified": false,
+        "deployment_context": {
+          "environment": "prod",
+          "namespace": "production",
+          "team": "payment"
+        }
+      },
+      "expected": {
+        "compliance_policy_allow": false,
+        "reason": "PCI DSS compliance violation: critical vulnerabilities or missing signature"
+      }
+    },
+    {
+      "name": "compliance_policy_test_gdpr_violation",
+      "description": "Test GDPR compliance violation",
+      "input": {
+        "image": "alpine:3.18",
+        "scan_results": {
+          "summary": {
+            "critical": 1,
+            "high": 0,
+            "medium": 2,
+            "low": 4,
+            "total": 7
+          }
+        },
+        "signature_verified": false,
+        "deployment_context": {
+          "environment": "prod",
+          "namespace": "production",
+          "team": "user-data"
+        }
+      },
+      "expected": {
+        "compliance_policy_allow": false,
+        "reason": "GDPR compliance violation: critical vulnerabilities or missing signature"
+      }
+    },
+    {
+      "name": "compliance_policy_test_compliant",
+      "description": "Test compliant image for payment team",
+      "input": {
+        "image": "alpine:3.18",
+        "scan_results": {
+          "summary": {
+            "critical": 0,
+            "high": 0,
+            "medium": 2,
+            "low": 3,
+            "total": 5
+          }
+        },
+        "signature_verified": true,
+        "deployment_context": {
+          "environment": "prod",
+          "namespace": "production",
+          "team": "payment"
+        }
+      },
+      "expected": {
+        "compliance_policy_allow": true
+      }
+    },
+    {
+      "name": "container_security_test_all_allow",
+      "description": "Test all policies allowing deployment",
+      "input": {
+        "image": "alpine:3.18",
+        "scan_results": {
+          "summary": {
+            "critical": 0,
+            "high": 0,
+            "medium": 2,
+            "low": 4,
+            "total": 6
+          }
+        },
+        "signature_verified": true,
+        "deployment_context": {
+          "environment": "prod",
+          "namespace": "production",
+          "team": "api"
+        }
+      },
+      "expected": {
+        "container_security_allow": true
+      }
+    },
+    {
+      "name": "container_security_test_vuln_block",
+      "description": "Test container security blocking due to vulnerabilities",
+      "input": {
+        "image": "nginx:1.21",
+        "scan_results": {
+          "summary": {
+            "critical": 1,
+            "high": 3,
+            "medium": 8,
+            "low": 15,
+            "total": 27
+          },
+          "vulnerabilities": [
+            {
+              "id": "CVE-2023-1234",
+              "severity": "CRITICAL",
+              "cvss_score": 9.8,
+              "package": "openssl",
+              "version": "1.1.1"
+            }
+          ]
+        },
+        "signature_verified": true,
+        "deployment_context": {
+          "environment": "prod",
+          "namespace": "production",
+          "team": "web"
+        }
+      },
+      "expected": {
+        "container_security_allow": false,
+        "reason": "Image contains critical vulnerabilities"
+      }
+    },
+    {
+      "name": "container_security_test_signature_block",
+      "description": "Test container security blocking due to missing signature",
+      "input": {
+        "image": "myapp:latest",
+        "scan_results": {
+          "summary": {
+            "critical": 0,
+            "high": 0,
+            "medium": 1,
+            "low": 2,
+            "total": 3
+          }
+        },
+        "signature_verified": false,
+        "deployment_context": {
+          "environment": "prod",
+          "namespace": "production",
+          "team": "backend"
+        }
+      },
+      "expected": {
+        "container_security_allow": false,
+        "reason": "Image signature verification required for production"
+      }
+    }
+  ]
+}

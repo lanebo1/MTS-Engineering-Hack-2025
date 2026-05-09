@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: container-security-webhook-notifications-config
+  namespace: container-security
+  labels:
+    app: container-security-webhook
+    component: notifications
+data:
+  notifications.yaml: |
+    # Включить/выключить уведомления
+    enabled: true
+
+    # Настройки Telegram бота
+    # Получить токен: https://t.me/BotFather
+    botToken: "YOUR_TELEGRAM_BOT_TOKEN_HERE"
+
+    # Получить Chat ID: отправьте сообщение боту и проверьте https://api.telegram.org/bot<YourBOTToken>/getUpdates
+    chatId: "YOUR_TELEGRAM_CHAT_ID_HERE"
+
+    # Минимальный уровень severity для уведомлений
+    # Возможные значения: "low", "medium", "high", "critical"
+    minSeverity: "medium"
+
+    # Типы уведомлений для отправки
+    enabledTypes:
+      - "security_alert"
+      - "policy_violation"
